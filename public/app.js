@@ -1,7 +1,9 @@
 const REFRESH_INTERVAL = 5000;
 const PORT_SORT_KEYS = ["protocol", "address", "port", "pid"];
-const DEMO_MODE = window.location.hostname.endsWith(".github.io") ||
-  new URLSearchParams(window.location.search).get("demo") === "1";
+const DEMO_MODE = typeof window !== "undefined" && (
+  window.location.hostname.endsWith(".github.io") ||
+  new URLSearchParams(window.location.search).get("demo") === "1"
+);
 const DEMO_DATA = {
   interfaces: [
     { name: "Wi-Fi", description: "Wireless Network Adapter", status: "Up", addresses: ["192.0.2.24", "2001:db8:1::24"], tunnel: false },
