@@ -7,6 +7,7 @@
   <meta name="description" content="NetPulse Local — privacy-first network visibility and monitoring.">
   <title>NetPulse — Network operations</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="history.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -20,6 +21,7 @@
       <a class="nav-link" href="#interfaces"><span class="nav-icon">⌁</span> Interfaces</a>
       <a class="nav-link" href="#analytics"><span class="nav-icon">⌁</span> Analytics</a>
       <a class="nav-link" href="#topology"><span class="nav-icon">◇</span> Topology</a>
+      <a class="nav-link" href="#reports"><span class="nav-icon">▤</span> Reports</a>
       <a class="nav-link" href="#routes"><span class="nav-icon">⇄</span> Routes</a>
       <a class="nav-link" href="#ports"><span class="nav-icon">⊞</span> Listening ports</a>
       <a class="nav-link" href="#settings"><span class="nav-icon">⚙</span> Settings</a>
@@ -76,21 +78,35 @@
       </section>
 
       <section class="panel" id="analytics">
-        <div class="panel-heading"><div class="section-title"><span class="section-kicker">03 / ACTIVITY SNAPSHOT</span><h2>Analytics</h2><p>Current inventory counts from the available local API</p></div><span class="panel-tag">LIVE COUNTS</span></div>
+        <div class="panel-heading"><div class="section-title"><span class="section-kicker">03 / HISTORICAL INTELLIGENCE</span><h2>Historical network analytics</h2><p>Measured network snapshots retained locally on this device</p></div><span class="panel-tag"><span class="tiny-dot"></span><span id="history-status">COLLECTING HISTORY</span></span></div>
         <div class="analytics-grid"><div><span>VPN / tunnel adapters</span><strong id="tunnel-count">—</strong></div><div><span>TCP endpoints</span><strong id="tcp-count">—</strong></div><div><span>UDP endpoints</span><strong id="udp-count">—</strong></div><div><span>Inactive interfaces</span><strong id="down-count">—</strong></div></div>
+        <div class="history-toolbar"><div class="history-period"><label for="history-range">TREND WINDOW</label><select id="history-range"><option value="24">Last 24 hours</option><option value="168" selected>Last 7 days</option><option value="720">Last 30 days</option></select></div><span class="history-meta" id="history-meta">Waiting for the first local snapshot</span></div>
+        <div class="history-chart-wrap"><canvas id="history-chart" height="220" role="img" aria-label="Historical network activity chart"></canvas><div class="history-empty" id="history-empty">Historical trends will appear after NetPulse collects its first local snapshot.</div></div>
+        <div class="history-legend"><span><i class="legend-online"></i> Online interfaces</span><span><i class="legend-endpoints"></i> Listening endpoints</span></div>
+        <div class="history-kpis"><div><span>Average online interfaces</span><strong id="history-average-online">—</strong></div><div><span>Average listening endpoints</span><strong id="history-average-endpoints">—</strong></div><div><span>Peak listening endpoints</span><strong id="history-peak-endpoints">—</strong></div></div>
       </section>
 
       <section class="panel" id="topology">
-        <div class="panel-heading"><div class="section-title"><span class="section-kicker">04 / NETWORK STRUCTURE</span><h2>Topology</h2><p>Interface and route relationships currently visible to this host</p></div><span class="panel-tag">HOST VIEW</span></div>
-        <div class="topology-strip"><div class="topology-node"><span class="node-symbol">▣</span><strong>This computer</strong><small>Local monitoring host</small></div><span class="topology-link"></span><div class="topology-node"><span class="node-symbol">⌁</span><strong id="topology-interface-count">—</strong><small>Detected interfaces</small></div><span class="topology-link"></span><div class="topology-node"><span class="node-symbol">⇄</span><strong id="topology-route-count">—</strong><small>Active routes</small></div></div>
-        <p class="panel-footnote">This is a host-level summary, not a discovered map of every device on the LAN.</p>
+        <div class="panel-heading"><div class="section-title"><span class="section-kicker">04 / NETWORK STRUCTURE</span><h2>Network topology</h2><p>Interactive host-level view of detected interfaces and route gateways</p></div><span class="panel-tag">LOCAL HOST VIEW</span></div>
+        <div class="topology-summary"><span id="topology-interface-count">—</span><span id="topology-route-count">—</span><span id="topology-gateway-count">—</span></div>
+        <div class="topology-map" id="topology-map" aria-label="Host network topology">
+          <div class="topology-host"><span class="node-symbol">▣</span><strong>This computer</strong><small>NetPulse monitoring host</small></div>
+          <div class="topology-branches" id="topology-branches"><p class="empty">Waiting for network interfaces…</p></div>
+        </div>
+        <p class="panel-footnote">Connections are inferred from local interface and routing-table data. This view does not claim to discover every device on the LAN.</p>
       </section>
 
       <section class="panel" id="routes"><div class="panel-heading"><div class="section-title"><span class="section-kicker">05 / PATH SELECTION</span><h2>Active routes</h2><p>Destination, gateway and route metric</p></div><span class="panel-tag">ROUTING TABLE</span></div><div class="table-wrap"><table><thead><tr><th>Destination</th><th>Gateway</th><th>Interface</th><th>Metric</th></tr></thead><tbody id="routes-body"><tr><td colspan="4" class="empty">Loading routes…</td></tr></tbody></table></div></section>
 
       <section class="panel" id="ports"><div class="panel-heading"><div class="section-title"><span class="section-kicker">06 / LOCAL SERVICES</span><h2>Listening endpoints</h2><p>TCP listeners and bound UDP endpoints</p></div><span class="panel-tag">PROCESS VIEW</span></div><div class="port-controls"><label class="search-control" for="port-search"><span aria-hidden="true">⌕</span><input id="port-search" type="search" placeholder="Search protocol, address, port or PID"></label><span id="port-result-count" class="result-count" aria-live="polite"></span></div><div class="table-wrap"><table><thead><tr><th scope="col" aria-sort="none"><button class="sort-button" type="button" data-port-sort="protocol">Protocol <span class="sort-indicator"></span></button></th><th scope="col" aria-sort="none"><button class="sort-button" type="button" data-port-sort="address">Local address <span class="sort-indicator"></span></button></th><th scope="col" aria-sort="ascending"><button class="sort-button" type="button" data-port-sort="port">Port <span class="sort-indicator">↑</span></button></th><th scope="col" aria-sort="none"><button class="sort-button" type="button" data-port-sort="pid">PID <span class="sort-indicator"></span></button></th></tr></thead><tbody id="ports-body"><tr><td colspan="4" class="empty">Loading endpoints…</td></tr></tbody></table></div></section>
 
-      <section class="panel settings-panel" id="settings"><div class="panel-heading"><div class="section-title"><span class="section-kicker">07 / PREFERENCES</span><h2>Settings</h2><p>Session and privacy information</p></div></div><div class="settings-row"><div><strong>Session</strong><span>NetPulse currently runs without user authentication.</span></div><span class="settings-status">Guest mode</span></div><div class="settings-row"><div><strong>Data handling</strong><span>Public preview uses fictional data; local mode reads from the local API.</span></div><span class="settings-status">Local-first</span></div></section>
+      <section class="panel" id="reports">
+        <div class="panel-heading"><div class="section-title"><span class="section-kicker">07 / OPERATIONAL REPORTING</span><h2>Network reports</h2><p>Summaries generated from locally retained monitoring history</p></div><span class="panel-tag">LOCAL REPORTS</span></div>
+        <div class="report-actions"><div><strong>Network activity report</strong><span id="report-period">No historical samples are available yet.</span></div><div class="report-buttons"><button class="secondary-button" id="export-csv" type="button">Export CSV</button><button class="primary-button" id="print-report" type="button">Print / Save PDF</button></div></div>
+        <div class="report-summary" id="report-summary"><p>Reports become available after NetPulse has collected historical snapshots.</p></div>
+      </section>
+
+      <section class="panel settings-panel" id="settings"><div class="panel-heading"><div class="section-title"><span class="section-kicker">08 / PREFERENCES</span><h2>Settings</h2><p>Session, privacy and history retention</p></div></div><div class="settings-row"><div><strong>Session</strong><span>NetPulse currently runs without user authentication.</span></div><span class="settings-status">Guest mode</span></div><div class="settings-row"><div><strong>Historical retention</strong><span>Snapshots remain in this browser and are automatically pruned.</span></div><label class="retention-control" for="history-retention"><select id="history-retention"><option value="7">7 days</option><option value="30" selected>30 days (default)</option><option value="90">90 days</option></select></label></div><div class="settings-row"><div><strong>Data handling</strong><span>History is stored locally in this browser; nothing is sent to GitHub Pages.</span></div><span class="settings-status">Local-first</span></div></section>
 
       <footer class="page-footer"><span>NETPULSE LOCAL</span><span>Designed for visibility. Built for privacy.</span><span id="footer-mode">LOCAL MONITORING</span></footer>
     </div>
