@@ -12,6 +12,7 @@
   let lastCaptureAt = 0;
   let historyReady = false;
   let historyError = false;
+  let captureInFlight = false;
   let selectedHours = 168;
   let retentionDays = History.DEFAULT_RETENTION_DAYS;
   let resizeFrame = 0;
@@ -223,12 +224,14 @@
       console.warn("NetPulse local history is unavailable:", error);
     }
     renderHistory();
+    if (latestData) captureIfDue(latestData);
   }
 
   async function captureIfDue(data) {
-    if (DEMO_MODE || historyError || !historyReady) return;
+    if (DEMO_MODE || historyError || !historyReady || captureInFlight) return;
     const now = Date.now();
     if (lastCaptureAt && now - lastCaptureAt < History.SAMPLE_INTERVAL_MS) return;
+    captureInFlight = true;
     try {
       const snapshot = History.createSnapshot(data, now);
       await History.saveSnapshot(snapshot);
@@ -241,6 +244,8 @@
       historyError = true;
       console.warn("NetPulse could not save a local history snapshot:", error);
       renderHistory();
+    } finally {
+      captureInFlight = false;
     }
   }
 
