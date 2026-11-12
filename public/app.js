@@ -355,5 +355,5 @@ if (typeof document !== "undefined") {
     });
   }
 }
-window.NetPulseApp = { showToast };
+if (typeof window !== "undefined") window.NetPulseApp = { showToast };
 if (typeof module !== "undefined" && module.exports) module.exports = { filterAndSortPorts, REFRESH_INTERVAL, API_TIMEOUT_MS };
