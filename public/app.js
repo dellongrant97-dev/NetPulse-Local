@@ -26,7 +26,12 @@ const DEMO_DATA = {
     { destination: "198.51.100.0/24", gateway: "On-link", interface: "WireGuard", metric: 5, active: true }
   ]
 };
-
+const DEMO_DEVICES = [
+  { name: "Workstation-01", type: "Local host", address: "192.0.2.24", status: "Online", classification: "Sample host" },
+  { name: "Router-Main", type: "Router", address: "192.0.2.1", status: "Online", classification: "Sample gateway" },
+  { name: "Storage-01", type: "Server", address: "198.51.100.18", status: "Online", classification: "Sample server" },
+  { name: "Guest-AP", type: "Access point", address: "192.0.2.80", status: "Offline", classification: "Sample device" }
+];
 function filterAndSortPorts(ports, query, sortKey, direction) {
   const term = query.trim().toLocaleLowerCase();
   return ports.filter((port) => !term || PORT_SORT_KEYS.some((key) => String(port[key] ?? "").toLocaleLowerCase().includes(term)))
@@ -56,6 +61,28 @@ function renderRows(bodyId, rows, columns, emptyMessage) {
     body.append(row);
   }
 }
+function renderDevices(interfaces) {
+  const rows = DEMO_MODE ? DEMO_DEVICES : interfaces.map((item) => ({
+    name: item.name, type: item.tunnel ? "VPN / tunnel adapter" : "Network adapter",
+    address: (item.addresses || []).join(", ") || "No assigned address",
+    status: item.status === "Up" ? "Online" : "Offline",
+    classification: item.tunnel ? "VPN / tunnel" : "Detected on this host"
+  }));
+  renderRows("devices-body", rows, [
+    { value: (item) => item.name },
+    { value: (item) => item.type, className: "type-chip" },
+    { value: (item) => item.address },
+    { value: (item) => item.status, className: "status-cell" },
+    { value: (item) => item.classification }
+  ], "No devices or adapters detected");
+  document.getElementById("device-count").textContent = rows.length;
+  document.getElementById("device-detail").textContent = DEMO_MODE ? "Fictional sample inventory" : "Detected adapters on this host";
+  document.getElementById("devices-description").textContent = DEMO_MODE ? "Fictional devices for preview purposes" : "Detected network adapters on this computer";
+  document.getElementById("device-mode-tag").textContent = DEMO_MODE ? "SAMPLE INVENTORY" : "LOCAL INVENTORY";
+  document.getElementById("device-footnote").textContent = DEMO_MODE
+    ? "All devices and addresses above are fictional sample data. This preview does not discover real network devices."
+    : "Local inventory reflects interfaces detected by this computer. It does not scan or identify every device on your Wi-Fi network.";
+}
 function renderPorts(ports, sortKey, direction) {
   const query = document.getElementById("port-search").value;
   const filtered = filterAndSortPorts(ports, query, sortKey, direction);
@@ -78,10 +105,18 @@ async function fetchData(endpoint) {
 }
 function renderDashboard(data) {
   const { interfaces, ports, routes } = data;
-  document.getElementById("interface-count").textContent = interfaces.filter((item) => item.status === "Up").length;
+  const up = interfaces.filter((item) => item.status === "Up").length;
+  const activeRoutes = routes.filter((item) => item.active !== false).length;
+  document.getElementById("interface-count").textContent = up;
   document.getElementById("tunnel-count").textContent = interfaces.filter((item) => item.tunnel).length;
   document.getElementById("port-count").textContent = ports.length;
-  document.getElementById("route-count").textContent = routes.filter((item) => item.active !== false).length;
+  document.getElementById("route-count").textContent = activeRoutes;
+  document.getElementById("tcp-count").textContent = ports.filter((item) => item.protocol === "TCP").length;
+  document.getElementById("udp-count").textContent = ports.filter((item) => item.protocol === "UDP").length;
+  document.getElementById("down-count").textContent = interfaces.filter((item) => item.status !== "Up").length;
+  document.getElementById("topology-interface-count").textContent = interfaces.length + " interfaces";
+  document.getElementById("topology-route-count").textContent = activeRoutes + " routes";
+  renderDevices(interfaces);
   currentPorts = ports;
   renderRows("interfaces-body", interfaces, [
     { value: (item) => item.description || item.name },
@@ -94,6 +129,21 @@ function renderDashboard(data) {
     { value: (item) => item.interface }, { value: (item) => item.metric }
   ], "No routes found");
   renderPorts(ports, currentPortSort.key, currentPortSort.direction);
+  updateNotifications(interfaces, ports, routes);
+  applyGlobalSearch();
+}
+function updateNotifications(interfaces, ports, routes) {
+  const notes = [];
+  const down = interfaces.filter((item) => item.status !== "Up").length;
+  if (down) notes.push(down + " interface(s) are currently down.");
+  if (!ports.length) notes.push("No listening endpoints were returned.");
+  if (!routes.length) notes.push("No routes were returned by the local API.");
+  if (!notes.length) notes.push("No current network warnings from the available checks.");
+  document.getElementById("notification-count").textContent = notes.length;
+  document.getElementById("notification-summary").textContent = notes.length + " update(s)";
+  const list = document.getElementById("notification-list");
+  list.replaceChildren();
+  notes.forEach((note) => { const li = document.createElement("li"); li.textContent = note; list.append(li); });
 }
 async function refreshDashboard() {
   const statusText = document.getElementById("status-text"), statusDot = document.getElementById("status-dot");
@@ -118,6 +168,17 @@ async function refreshDashboard() {
     console.error("Dashboard refresh failed:", error);
   }
 }
+function applyGlobalSearch() {
+  const term = document.getElementById("global-search").value.trim().toLocaleLowerCase();
+  document.querySelectorAll("#devices-body tr,#interfaces-body tr,#routes-body tr,#ports-body tr").forEach((row) => {
+    row.hidden = !!term && !row.textContent.toLocaleLowerCase().includes(term);
+  });
+}
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.hidden = false;
+}
 let currentPortSort = { key: "port", direction: 1 };
 let currentPorts = [];
 if (typeof document !== "undefined") {
@@ -131,6 +192,37 @@ if (typeof document !== "undefined") {
     if (currentPortSort.key === button.dataset.portSort) currentPortSort.direction *= -1;
     else currentPortSort = { key: button.dataset.portSort, direction: 1 };
     renderPorts(currentPorts, currentPortSort.key, currentPortSort.direction);
+  }));
+  document.getElementById("global-search").addEventListener("input", applyGlobalSearch);
+  document.getElementById("notifications-button").addEventListener("click", () => {
+    const menu = document.getElementById("notification-menu"), open = menu.hidden;
+    menu.hidden = !open;
+    document.getElementById("notifications-button").setAttribute("aria-expanded", String(open));
+    document.getElementById("profile-menu").hidden = true;
+    document.getElementById("profile-button").setAttribute("aria-expanded", "false");
+  });
+  document.getElementById("profile-button").addEventListener("click", () => {
+    const menu = document.getElementById("profile-menu"), open = menu.hidden;
+    menu.hidden = !open;
+    document.getElementById("profile-button").setAttribute("aria-expanded", String(open));
+    document.getElementById("notification-menu").hidden = true;
+    document.getElementById("notifications-button").setAttribute("aria-expanded", "false");
+  });
+  document.getElementById("sign-in-button").addEventListener("click", () => {
+    showToast("User sign-in is a planned feature. No account system or password handling is configured yet.");
+    document.getElementById("profile-menu").hidden = true;
+    document.getElementById("profile-button").setAttribute("aria-expanded", "false");
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".top-action-wrap")) {
+      document.getElementById("notification-menu").hidden = true;
+      document.getElementById("profile-menu").hidden = true;
+      document.getElementById("notifications-button").setAttribute("aria-expanded", "false");
+      document.getElementById("profile-button").setAttribute("aria-expanded", "false");
+    }
+  });
+  document.querySelectorAll(".nav-link").forEach((link) => link.addEventListener("click", () => {
+    document.querySelectorAll(".nav-link").forEach((item) => item.classList.toggle("active", item === link));
   }));
   refreshDashboard();
   if (!DEMO_MODE) setInterval(refreshDashboard, REFRESH_INTERVAL);
