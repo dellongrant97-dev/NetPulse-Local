@@ -1,4 +1,5 @@
 const REFRESH_INTERVAL = 5000;
+const API_TIMEOUT_MS = 8000;
 const PORT_SORT_KEYS = ["protocol", "address", "port", "pid"];
 const DEMO_MODE = typeof window !== "undefined" && (
   window.location.hostname.endsWith(".github.io") ||
@@ -99,9 +100,23 @@ function renderPorts(ports, sortKey, direction) {
   });
 }
 async function fetchData(endpoint) {
-  const response = await fetch(endpoint, { headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error(endpoint + " returned " + response.status);
-  return response.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const response = await fetch(endpoint, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(endpoint + " returned HTTP " + response.status);
+    return await response.json();
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error(endpoint + " timed out after " + (API_TIMEOUT_MS / 1000) + " seconds");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 function renderDashboard(data) {
   const { interfaces, ports, routes } = data;
@@ -132,8 +147,9 @@ function renderDashboard(data) {
   updateNotifications(interfaces, ports, routes);
   applyGlobalSearch();
 }
-function updateNotifications(interfaces, ports, routes) {
+function updateNotifications(interfaces, ports, routes, apiUnavailable = false) {
   const notes = [];
+  if (apiUnavailable) notes.push("The local API is unavailable; displayed values may be stale.");
   const down = interfaces.filter((item) => item.status !== "Up").length;
   if (down) notes.push(down + " interface(s) are currently down.");
   if (!ports.length) notes.push("No listening endpoints were returned.");
@@ -178,14 +194,20 @@ async function refreshDashboard() {
     renderDashboard({ interfaces, ports, routes });
     hasSuccessfulRefresh = true;
     statusText.textContent = "Live";
-    statusDot.classList.remove("demo"); statusDot.classList.add("online");
+    statusDot.classList.remove("demo", "error"); statusDot.classList.add("online");
     lastUpdated.textContent = "Updated " + new Date().toLocaleTimeString();
+    document.getElementById("api-error").hidden = true;
   } catch (error) {
     statusText.textContent = "API unavailable";
-    statusDot.classList.remove("online", "demo");
+    statusDot.classList.remove("online", "demo"); statusDot.classList.add("error");
     lastUpdated.textContent = hasSuccessfulRefresh
       ? "Refresh failed · displayed data may be stale"
       : "Waiting for a valid API response";
+    const errorNotice = document.getElementById("api-error");
+    errorNotice.hidden = false;
+    document.getElementById("api-error-detail").textContent =
+      (error && error.message ? error.message : "Unable to reach the local service.") + " · Retrying automatically.";
+    updateNotifications([], [], [], true);
     console.error("Dashboard refresh failed:", error);
   } finally {
     refreshInFlight = false;
@@ -194,21 +216,56 @@ async function refreshDashboard() {
 function applyGlobalSearch() {
   const term = document.getElementById("global-search").value.trim().toLocaleLowerCase();
   const portTerm = document.getElementById("port-search").value.trim().toLocaleLowerCase();
-  document.querySelectorAll("#devices-body tr,#interfaces-body tr,#routes-body tr,#ports-body tr").forEach((row) => {
-    const text = row.textContent.toLocaleLowerCase();
-    const globalMatch = !term || text.includes(term);
-    const portMatch = !row.closest("#ports-body") || !portTerm || text.includes(portTerm);
-    row.hidden = !(globalMatch && portMatch);
-  });
-  const portRows = [...document.querySelectorAll("#ports-body tr")];
+  const groups = [
+    { selector: "#devices-body", columns: 5 },
+    { selector: "#interfaces-body", columns: 4 },
+    { selector: "#routes-body", columns: 4 },
+    { selector: "#ports-body", columns: 4 }
+  ];
+  for (const group of groups) {
+    const body = document.querySelector(group.selector);
+    const rows = [...body.querySelectorAll("tr:not(.search-empty)")];
+    let visible = 0;
+    for (const row of rows) {
+      const text = row.textContent.toLocaleLowerCase();
+      const matchesGlobal = !term || text.includes(term);
+      const matchesPort = group.selector !== "#ports-body" || !portTerm || text.includes(portTerm);
+      row.hidden = !(matchesGlobal && matchesPort);
+      if (!row.hidden && !row.querySelector(".empty")) visible++;
+    }
+    let empty = body.querySelector(".search-empty");
+    if (!empty) {
+      empty = document.createElement("tr");
+      empty.className = "search-empty";
+      const message = document.createElement("td");
+      message.colSpan = group.columns;
+      message.className = "empty";
+      empty.append(message);
+      body.append(empty);
+    }
+    const hasQuery = Boolean(term || (group.selector === "#ports-body" && portTerm));
+    empty.hidden = !(hasQuery && rows.length > 0 && visible === 0);
+    empty.firstElementChild.textContent = "No results match the current search";
+  }
+  const portBody = document.querySelector("#ports-body");
+  const portRows = [...portBody.querySelectorAll("tr:not(.search-empty)")];
   const visiblePorts = portRows.filter((row) => !row.hidden && !row.querySelector(".empty")).length;
   const count = document.getElementById("port-result-count");
-  if (count && (term || portTerm)) count.textContent = visiblePorts + " matching endpoint(s)";
+  if (count) {
+    const filteredByPort = Boolean(portTerm);
+    const filteredByGlobal = Boolean(term);
+    count.textContent = filteredByPort || filteredByGlobal
+      ? visiblePorts + " matching endpoint(s)"
+      : portRows.filter((row) => !row.querySelector(".empty")).length + " endpoints";
+  }
 }
+let toastTimer;
 function showToast(message) {
   const toast = document.getElementById("toast");
   toast.textContent = message;
   toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 4200);
 }
 let currentPortSort = { key: "port", direction: 1 };
 let currentPorts = [];
@@ -223,8 +280,10 @@ if (typeof document !== "undefined") {
     if (currentPortSort.key === button.dataset.portSort) currentPortSort.direction *= -1;
     else currentPortSort = { key: button.dataset.portSort, direction: 1 };
     renderPorts(currentPorts, currentPortSort.key, currentPortSort.direction);
+    applyGlobalSearch();
   }));
   document.getElementById("global-search").addEventListener("input", applyGlobalSearch);
+  document.getElementById("refresh-button").addEventListener("click", refreshDashboard);
   document.getElementById("notifications-button").addEventListener("click", () => {
     const menu = document.getElementById("notification-menu"), open = menu.hidden;
     menu.hidden = !open;
@@ -243,6 +302,14 @@ if (typeof document !== "undefined") {
     showToast("User sign-in is a planned feature. No account system or password handling is configured yet.");
     document.getElementById("profile-menu").hidden = true;
     document.getElementById("profile-button").setAttribute("aria-expanded", "false");
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      document.getElementById("notification-menu").hidden = true;
+      document.getElementById("profile-menu").hidden = true;
+      document.getElementById("notifications-button").setAttribute("aria-expanded", "false");
+      document.getElementById("profile-button").setAttribute("aria-expanded", "false");
+    }
   });
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".top-action-wrap")) {
@@ -275,4 +342,4 @@ if (typeof document !== "undefined") {
   refreshDashboard();
   if (!DEMO_MODE) setInterval(refreshDashboard, REFRESH_INTERVAL);
 }
-if (typeof module !== "undefined" && module.exports) module.exports = { filterAndSortPorts };
+if (typeof module !== "undefined" && module.exports) module.exports = { filterAndSortPorts, REFRESH_INTERVAL, API_TIMEOUT_MS };
