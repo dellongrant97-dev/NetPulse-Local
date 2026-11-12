@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1220">
+    <title>NetPulse Local</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div><p class="eyebrow">LOCAL NETWORK MONITOR</p><h1>NetPulse <span>Local</span></h1></div>
+        <div class="live-status" aria-live="polite"><span class="pulse" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+      </header>
+      <section class="summary-grid" aria-label="Network summary">
+        <article class="summary-card"><span class="summary-label">Interfaces up</span><strong id="interface-count">—</strong><span class="summary-detail">with assigned addresses</span></article>
+        <article class="summary-card"><span class="summary-label">Tunnels / VPN</span><strong id="tunnel-count">—</strong><span class="summary-detail">detected adapters</span></article>
+        <article class="summary-card"><span class="summary-label">Listening endpoints</span><strong id="port-count">—</strong><span class="summary-detail">TCP and UDP</span></article>
+        <article class="summary-card"><span class="summary-label">Routes</span><strong id="route-count">—</strong><span class="summary-detail">active routing entries</span></article>
+      </section>
+      <section class="panel">
+        <div class="panel-heading"><div><p class="eyebrow">CONNECTIVITY</p><h2>Network interfaces</h2></div><span class="panel-caption">Adapters and assigned IP addresses</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Interface</th><th>Status</th><th>Addresses</th><th>Type</th></tr></thead><tbody id="interfaces-body"><tr><td colspan="4" class="empty">Loading interfaces…</td></tr></tbody></table></div>
+      </section>
+      <section class="panel">
+        <div class="panel-heading"><div><p class="eyebrow">PATH SELECTION</p><h2>Active routes</h2></div><span class="panel-caption">Destination, gateway, and metric</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Destination</th><th>Gateway</th><th>Interface</th><th>Metric</th></tr></thead><tbody id="routes-body"><tr><td colspan="4" class="empty">Loading routes…</td></tr></tbody></table></div>
+      </section>
+      <section class="panel">
+        <div class="panel-heading"><div><p class="eyebrow">LOCAL SERVICES</p><h2>Listening ports</h2></div><span class="panel-caption">TCP listeners and bound UDP endpoints</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Protocol</th><th>Local address</th><th>Port</th><th>PID</th></tr></thead><tbody id="ports-body"><tr><td colspan="4" class="empty">Loading ports…</td></tr></tbody></table></div>
+      </section>
+      <footer>Refreshes every 5 seconds <span id="last-updated"></span></footer>
+    </main>
+  </body>
+</html>
