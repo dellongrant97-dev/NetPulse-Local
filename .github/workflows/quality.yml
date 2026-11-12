@@ -26,7 +26,7 @@ jobs:
       - name: Check dashboard JavaScript syntax
         run: node --check public/app.js
       - name: Run Node tests
-        run: node --test test/app.test.js
+        run: node --test test/*.test.js
   python:
     runs-on: ubuntu-latest
     steps:
