@@ -319,3 +319,13 @@ button:focus-visible,select:focus-visible { outline:2px solid #79a5ff;outline-of
   #reports { display:block!important }
   #reports .report-summary { grid-template-columns:repeat(3,1fr) }
 }
+
+.report-breakdown { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:0 18px 18px }
+.report-breakdown-section { min-width:0;overflow:hidden;border:1px solid #27374e;border-radius:8px;background:#0e1727 }
+.report-breakdown-section h3 { margin:0;padding:12px 13px;border-bottom:1px solid #27374e;color:#dce7f6;font-size:10px;font-weight:650 }
+.report-breakdown-section table { width:100%;border-collapse:collapse }
+.report-breakdown-section th,.report-breakdown-section td { padding:9px 10px;font-size:9px }
+.report-breakdown-section th { background:#152238;color:#8fa1b9 }
+.report-breakdown-section td { color:#c3cede;font-variant-numeric:tabular-nums }
+@media(max-width:760px) { .report-breakdown { grid-template-columns:1fr } }
+@media print { .report-breakdown-section { background:#fff!important;border-color:#bbb!important }.report-breakdown-section h3,.report-breakdown-section td { color:#111!important }.report-breakdown-section th { color:#333!important;background:#eee!important } }
