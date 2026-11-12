@@ -149,11 +149,14 @@ function renderDashboard(data) {
 }
 function updateNotifications(interfaces, ports, routes, apiUnavailable = false) {
   const notes = [];
-  if (apiUnavailable) notes.push("The local API is unavailable; displayed values may be stale.");
-  const down = interfaces.filter((item) => item.status !== "Up").length;
-  if (down) notes.push(down + " interface(s) are currently down.");
-  if (!ports.length) notes.push("No listening endpoints were returned.");
-  if (!routes.length) notes.push("No routes were returned by the local API.");
+  if (apiUnavailable) {
+    notes.push("The local API is unavailable; displayed values may be stale.");
+  } else {
+    const down = interfaces.filter((item) => item.status !== "Up").length;
+    if (down) notes.push(down + " interface(s) are currently down.");
+    if (!ports.length) notes.push("No listening endpoints were returned.");
+    if (!routes.length) notes.push("No routes were returned by the local API.");
+  }
   const count = document.getElementById("notification-count");
   count.textContent = String(notes.length);
   count.hidden = notes.length === 0;
@@ -175,6 +178,8 @@ let hasSuccessfulRefresh = false;
 async function refreshDashboard() {
   if (refreshInFlight) return;
   refreshInFlight = true;
+  const refreshButton = document.getElementById("refresh-button");
+  if (refreshButton) { refreshButton.disabled = true; refreshButton.classList.add("is-loading"); }
   const statusText = document.getElementById("status-text"), statusDot = document.getElementById("status-dot");
   const lastUpdated = document.getElementById("last-updated");
   try {
@@ -211,6 +216,7 @@ async function refreshDashboard() {
     console.error("Dashboard refresh failed:", error);
   } finally {
     refreshInFlight = false;
+    if (refreshButton) { refreshButton.disabled = false; refreshButton.classList.remove("is-loading"); }
   }
 }
 function applyGlobalSearch() {
@@ -271,6 +277,7 @@ let currentPortSort = { key: "port", direction: 1 };
 let currentPorts = [];
 if (typeof document !== "undefined") {
   if (DEMO_MODE) {
+    document.getElementById("refresh-button").hidden = true;
     document.getElementById("demo-banner").hidden = false;
     document.getElementById("mode-label").textContent = "PUBLIC DEMO";
     document.getElementById("footer-mode").textContent = "SAMPLE DATA ONLY";
@@ -340,6 +347,11 @@ if (typeof document !== "undefined") {
   }
   setActiveNavigation(window.location.hash || "#overview");
   refreshDashboard();
-  if (!DEMO_MODE) setInterval(refreshDashboard, REFRESH_INTERVAL);
+  if (!DEMO_MODE) {
+    setInterval(refreshDashboard, REFRESH_INTERVAL);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshDashboard();
+    });
+  }
 }
 if (typeof module !== "undefined" && module.exports) module.exports = { filterAndSortPorts, REFRESH_INTERVAL, API_TIMEOUT_MS };
