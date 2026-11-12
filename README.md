@@ -46,13 +46,25 @@ The Python backend serves the same dashboard and read-only API endpoints as the 
 
 ## Dashboard features
 
+- Dashboard overview with summary counts
+- Devices inventory: fictional sample devices in public demo mode; detected network adapters in local mode
 - Network interface status and assigned addresses
 - VPN/tunnel adapter classification
 - Active routing table entries
 - Searchable and sortable TCP/UDP listening endpoints
+- Global search across visible device, interface, route, and port rows
+- Notification panel with status messages derived from available network checks
+- Responsive sidebar, top bar, profile menu, and dark dashboard layout
 - Five-second refresh when connected to a local backend
-- Responsive dark interface
 - Public demo mode with clearly identified sample data
+
+### Device inventory scope
+
+The current local backend reports interfaces belonging to the computer running NetPulse. The Devices view uses those detected interfaces as a host-level inventory. It does not claim to discover every router, phone, computer, or access point on the wider LAN. LAN-wide discovery would require a separate, explicitly designed feature.
+
+### User sign-in
+
+The profile menu currently displays a guest session and a sign-in entry point, but authentication is **not implemented**. The sign-in action explains this rather than collecting credentials. Real user accounts require a secure authentication service and session handling; a static GitHub Pages site alone cannot securely provide that backend.
 
 ## API
 
