@@ -30,7 +30,19 @@
       </section>
       <section class="panel">
         <div class="panel-heading"><div><p class="eyebrow">LOCAL SERVICES</p><h2>Listening ports</h2></div><span class="panel-caption">TCP listeners and bound UDP endpoints</span></div>
-        <div class="table-wrap"><table><thead><tr><th>Protocol</th><th>Local address</th><th>Port</th><th>PID</th></tr></thead><tbody id="ports-body"><tr><td colspan="4" class="empty">Loading ports…</td></tr></tbody></table></div>
+        <div class="port-controls">
+          <label class="search-control" for="port-search">
+            <span>Search endpoints</span>
+            <input id="port-search" type="search" placeholder="Protocol, address, port, or PID">
+          </label>
+          <span id="port-result-count" class="result-count" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap"><table><thead><tr>
+          <th scope="col" aria-sort="none"><button class="sort-button" type="button" data-port-sort="protocol">Protocol <span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th scope="col" aria-sort="none"><button class="sort-button" type="button" data-port-sort="address">Local address <span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th scope="col" aria-sort="ascending"><button class="sort-button" type="button" data-port-sort="port">Port <span class="sort-indicator" aria-hidden="true">↑</span></button></th>
+          <th scope="col" aria-sort="none"><button class="sort-button" type="button" data-port-sort="pid">PID <span class="sort-indicator" aria-hidden="true"></span></button></th>
+        </tr></thead><tbody id="ports-body"><tr><td colspan="4" class="empty">Loading ports…</td></tr></tbody></table></div>
       </section>
       <footer>Refreshes every 5 seconds <span id="last-updated"></span></footer>
     </main>
