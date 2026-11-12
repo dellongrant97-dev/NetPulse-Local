@@ -180,8 +180,10 @@
   function renderReport() {
     const summary = History.summarizeSnapshots(snapshots);
     const report = byId("report-summary");
+    const breakdown = byId("report-breakdown");
     if (!report) return;
     report.replaceChildren();
+    if (breakdown) breakdown.replaceChildren();
     if (!summary) {
       const message = document.createElement("p");
       message.textContent = DEMO_MODE
@@ -208,6 +210,50 @@
       item.append(name, metric);
       report.append(item);
     });
+
+    if (!breakdown) return;
+    const buildGroups = (weekly) => {
+      const groups = new Map();
+      snapshots.forEach((snapshot) => {
+        const start = new Date(snapshot.timestamp);
+        start.setHours(0, 0, 0, 0);
+        if (weekly) start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+        const key = start.getTime();
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(snapshot);
+      });
+      return [...groups.entries()].sort((a, b) => a[0] - b[0]).slice(weekly ? -4 : -7);
+    };
+    const addBreakdown = (heading, groups, weekly) => {
+      const section = document.createElement("section");
+      section.className = "report-breakdown-section";
+      const title = document.createElement("h3");
+      title.textContent = heading;
+      section.append(title);
+      const table = document.createElement("table");
+      const head = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      ["Period", "Samples", "Avg. online", "Avg. endpoints"].forEach((label) => {
+        const cell = document.createElement("th"); cell.textContent = label; headRow.append(cell);
+      });
+      head.append(headRow); table.append(head);
+      const body = document.createElement("tbody");
+      groups.forEach(([timestamp, entries]) => {
+        const grouped = History.summarizeSnapshots(entries);
+        const row = document.createElement("tr");
+        const start = new Date(timestamp);
+        const period = weekly
+          ? start.toLocaleDateString([], { month: "short", day: "numeric" }) + " – " + new Date(timestamp + 6 * 86400000).toLocaleDateString([], { month: "short", day: "numeric" })
+          : start.toLocaleDateString([], { dateStyle: "medium" });
+        [period, grouped.sampleCount, grouped.averageOnlineInterfaces, grouped.averageListeningEndpoints].forEach((value) => {
+          const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell);
+        });
+        body.append(row);
+      });
+      table.append(body); section.append(table); breakdown.append(section);
+    };
+    addBreakdown("Daily summary · last 7 days", buildGroups(false), false);
+    addBreakdown("Weekly summary · last 4 weeks", buildGroups(true), true);
   }
 
   async function loadHistory() {
