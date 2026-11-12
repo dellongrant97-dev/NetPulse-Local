@@ -68,7 +68,7 @@ function addDeviceRows(interfaces) {
     const name = document.createElement("td");
     const glyph = document.createElement("span");
     glyph.className = "device-glyph" + (item.status === "Up" ? "" : " down");
-    glyph.textContent = item.tunnel ? "◇" : item.name.toLowerCase().includes("wi") ? "⌁" : "▣";
+    glyph.textContent = item.tunnel ? "◇" : (item.name || "").toLowerCase().includes("wi") ? "⌁" : "▣";
     const label = document.createElement("span");
     label.className = "device-name";
     label.textContent = item.name || item.description || "Network adapter";
