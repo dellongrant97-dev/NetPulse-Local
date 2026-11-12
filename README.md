@@ -57,6 +57,21 @@ The Python backend serves the same dashboard and read-only API endpoints as the 
 - Responsive sidebar, top bar, profile menu, and dark dashboard layout
 - Five-second refresh when connected to a local backend
 - Public demo mode with clearly identified sample data
+- Historical network analytics with one-minute local snapshots and a 30-day default retention period
+- Configurable history retention (7, 30, or 90 days) stored in browser IndexedDB
+- Host-level topology view with expandable interface details and related route gateways
+- Daily and weekly summaries generated from retained measurements
+- CSV export and browser print-to-PDF reporting
+
+### Historical data and reporting
+
+In local mode, the dashboard records a compact snapshot after each successful collection interval (once per minute). Snapshots are stored in the browser's IndexedDB database on the device running the dashboard. The default retention is 30 days and can be changed to 7 or 90 days in Settings. Expired records are pruned automatically. Historical analytics and reports are based only on snapshots collected while the local dashboard is running; NetPulse does not invent missing history.
+
+The public GitHub Pages preview does not collect or persist history. Its fictional sample data remains visibly labelled and is not presented as real historical measurements. CSV exports contain timestamped measurements. The Print / Save PDF action uses the browser's print dialog; choose Save as PDF there.
+
+### Topology scope
+
+The topology view initially maps the local monitoring host, its detected network interfaces, and route gateways associated with those interfaces. Interface cards can be expanded to inspect assigned addresses and related routes. This is a host-level view, not LAN-wide device discovery; remote device discovery is a separate future capability.
 
 ### Device inventory scope
 
