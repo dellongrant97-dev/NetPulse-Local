@@ -223,3 +223,11 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   .nav-link.active { box-shadow: inset 0 -2px #80b7ff, inset 0 1px rgba(255,255,255,.05); }
   th, td { padding: 12px 14px; }
 }
+
+.refresh-button[hidden] { display: none; }
+.refresh-button:disabled { cursor: wait; opacity: .72; }
+.refresh-button.is-loading span { animation: netpulse-spin .8s linear infinite; }
+@keyframes netpulse-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .refresh-button.is-loading span { animation: none; }
+}
