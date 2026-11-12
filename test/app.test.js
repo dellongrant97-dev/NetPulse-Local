@@ -3,6 +3,7 @@ const { once } = require("node:events");
 const test = require("node:test");
 const { createApp } = require("../src/app");
 const { parseLinuxIpv6Routes, parseLinuxRoutes, parseSsOutput, isTunnel } = require("../src/system-inspector");
+const { filterAndSortPorts } = require("../public/app");
 
 async function withServer(app, callback) {
   const server = app.listen(0, "127.0.0.1");
@@ -83,4 +84,27 @@ test("Linux IPv6 route parser formats destination and gateway", () => {
 test("tunnel detection recognizes common VPN adapter names", () => {
   assert.equal(isTunnel("Tailscale"), true);
   assert.equal(isTunnel("Ethernet"), false);
+});
+
+test("port search matches protocol, address, port, and PID case-insensitively", () => {
+  const ports = [
+    { protocol: "TCP", address: "127.0.0.1", port: 8080, pid: 321 },
+    { protocol: "UDP", address: "::", port: 53, pid: null }
+  ];
+  assert.deepEqual(filterAndSortPorts(ports, "tcp", "port", 1), [ports[0]]);
+  assert.deepEqual(filterAndSortPorts(ports, "127.0.0.1", "port", 1), [ports[0]]);
+  assert.deepEqual(filterAndSortPorts(ports, "53", "port", 1), [ports[1]]);
+  assert.deepEqual(filterAndSortPorts(ports, "321", "port", 1), [ports[0]]);
+});
+
+test("port sorting is numeric, reversible, and leaves missing PIDs last", () => {
+  const ports = [
+    { protocol: "TCP", address: "b", port: 100, pid: null },
+    { protocol: "TCP", address: "a", port: 9, pid: 11 },
+    { protocol: "UDP", address: "c", port: 30, pid: 2 }
+  ];
+  assert.deepEqual(filterAndSortPorts(ports, "", "port", 1).map((port) => port.port), [9, 30, 100]);
+  assert.deepEqual(filterAndSortPorts(ports, "", "port", -1).map((port) => port.port), [100, 30, 9]);
+  assert.deepEqual(filterAndSortPorts(ports, "", "pid", 1).map((port) => port.pid), [2, 11, null]);
+  assert.deepEqual(ports.map((port) => port.port), [100, 9, 30]);
 });
