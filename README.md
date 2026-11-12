@@ -46,13 +46,18 @@ The Python backend serves the same dashboard and read-only API endpoints as the 
 
 ## Dashboard features
 
+- Dashboard overview with active-interface, VPN/tunnel, listening-endpoint and route summaries
+- Devices inventory view: fictional sample inventory in the public demo; locally detected adapters in local mode
 - Network interface status and assigned addresses
 - VPN/tunnel adapter classification
-- Active routing table entries
-- Searchable and sortable TCP/UDP listening endpoints
+- Active routing table entries and a simplified route topology view
+- Analytics summary calculated from currently available API data
+- Global dashboard search plus searchable and sortable TCP/UDP listening endpoints
+- Notification panel for demo and local API status
+- Guest profile and sign-in information panel; account authentication is not configured
 - Five-second refresh when connected to a local backend
-- Responsive dark interface
-- Public demo mode with clearly identified sample data
+- Responsive dark operations dashboard
+- Public demo mode with clearly identified fictional sample data
 
 ## API
 
@@ -74,4 +79,4 @@ python -m pytest test/test_python_api.py test/test_python_inspector.py test/test
 
 ## Privacy and demo data
 
-The hosted demo contains only static, fictional sample data. The local application reads network information on the device where its backend is running. It does not upload that information to GitHub Pages.
+The hosted demo contains only static, fictional sample data. The local application reads network information on the device where its backend is running. The Devices view represents adapters reported by the local interface API; it does not discover every device on the LAN. The Topology view summarizes routes returned by the local API rather than mapping the full network. Account sign-in is a visual placeholder only and does not collect credentials. The application does not upload that information to GitHub Pages.
