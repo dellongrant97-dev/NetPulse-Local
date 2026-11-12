@@ -24,7 +24,10 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
       - name: Check dashboard JavaScript syntax
-        run: node --check public/app.js
+        run: |
+          node --check public/app.js
+          node --check public/history.js
+          node --check public/intelligence.js
       - name: Run Node tests
         run: node --test test/*.test.js
   python:
