@@ -6,7 +6,7 @@ A privacy-first network dashboard for inspecting network interfaces, assigned IP
 
 The public preview uses a clearly labelled, fictional sample dataset. It is an interactive interface preview only; it does not connect to a visitor's computer or show real network activity.
 
-After GitHub Pages is enabled and the deployment workflow has completed, open:
+To publish the demo, open the repository Settings → Pages and set the build and deployment source to **GitHub Actions**. The workflow deploys the `public/` folder whenever changes reach `main`. After the first successful deployment, open:
 
 [NetPulse public demo](https://dellongrant97-dev.github.io/NetPulse-Local/)
 
