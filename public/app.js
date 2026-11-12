@@ -138,41 +138,72 @@ function updateNotifications(interfaces, ports, routes) {
   if (down) notes.push(down + " interface(s) are currently down.");
   if (!ports.length) notes.push("No listening endpoints were returned.");
   if (!routes.length) notes.push("No routes were returned by the local API.");
-  if (!notes.length) notes.push("No current network warnings from the available checks.");
-  document.getElementById("notification-count").textContent = notes.length;
-  document.getElementById("notification-summary").textContent = notes.length + " update(s)";
+  const count = document.getElementById("notification-count");
+  count.textContent = String(notes.length);
+  count.hidden = notes.length === 0;
+  document.getElementById("notification-summary").textContent = notes.length
+    ? notes.length + " active alert(s)" : "All available checks clear";
   const list = document.getElementById("notification-list");
   list.replaceChildren();
+  if (!notes.length) {
+    const li = document.createElement("li");
+    li.className = "notification-clear";
+    li.textContent = "No active network alerts.";
+    list.append(li);
+    return;
+  }
   notes.forEach((note) => { const li = document.createElement("li"); li.textContent = note; list.append(li); });
 }
+let refreshInFlight = false;
+let hasSuccessfulRefresh = false;
 async function refreshDashboard() {
+  if (refreshInFlight) return;
+  refreshInFlight = true;
   const statusText = document.getElementById("status-text"), statusDot = document.getElementById("status-dot");
+  const lastUpdated = document.getElementById("last-updated");
   try {
     if (DEMO_MODE) {
       renderDashboard(DEMO_DATA);
       statusText.textContent = "Demo mode";
       statusDot.classList.remove("online"); statusDot.classList.add("demo");
-      document.getElementById("last-updated").textContent = "Sample dataset · not live";
+      lastUpdated.textContent = "Sample dataset · not live";
       return;
     }
     const [interfaces, ports, routes] = await Promise.all([
       fetchData("/api/interfaces"), fetchData("/api/ports"), fetchData("/api/routes")
     ]);
+    if (![interfaces, ports, routes].every(Array.isArray)) {
+      throw new Error("One or more API endpoints returned an unexpected data format.");
+    }
     renderDashboard({ interfaces, ports, routes });
+    hasSuccessfulRefresh = true;
     statusText.textContent = "Live";
     statusDot.classList.remove("demo"); statusDot.classList.add("online");
-    document.getElementById("last-updated").textContent = "Updated " + new Date().toLocaleTimeString();
+    lastUpdated.textContent = "Updated " + new Date().toLocaleTimeString();
   } catch (error) {
     statusText.textContent = "API unavailable";
     statusDot.classList.remove("online", "demo");
+    lastUpdated.textContent = hasSuccessfulRefresh
+      ? "Refresh failed · displayed data may be stale"
+      : "Waiting for a valid API response";
     console.error("Dashboard refresh failed:", error);
+  } finally {
+    refreshInFlight = false;
   }
 }
 function applyGlobalSearch() {
   const term = document.getElementById("global-search").value.trim().toLocaleLowerCase();
+  const portTerm = document.getElementById("port-search").value.trim().toLocaleLowerCase();
   document.querySelectorAll("#devices-body tr,#interfaces-body tr,#routes-body tr,#ports-body tr").forEach((row) => {
-    row.hidden = !!term && !row.textContent.toLocaleLowerCase().includes(term);
+    const text = row.textContent.toLocaleLowerCase();
+    const globalMatch = !term || text.includes(term);
+    const portMatch = !row.closest("#ports-body") || !portTerm || text.includes(portTerm);
+    row.hidden = !(globalMatch && portMatch);
   });
+  const portRows = [...document.querySelectorAll("#ports-body tr")];
+  const visiblePorts = portRows.filter((row) => !row.hidden && !row.querySelector(".empty")).length;
+  const count = document.getElementById("port-result-count");
+  if (count && (term || portTerm)) count.textContent = visiblePorts + " matching endpoint(s)";
 }
 function showToast(message) {
   const toast = document.getElementById("toast");
@@ -187,7 +218,7 @@ if (typeof document !== "undefined") {
     document.getElementById("mode-label").textContent = "PUBLIC DEMO";
     document.getElementById("footer-mode").textContent = "SAMPLE DATA ONLY";
   }
-  document.getElementById("port-search").addEventListener("input", () => renderPorts(currentPorts, currentPortSort.key, currentPortSort.direction));
+  document.getElementById("port-search").addEventListener("input", () => { renderPorts(currentPorts, currentPortSort.key, currentPortSort.direction); applyGlobalSearch(); });
   document.querySelectorAll("[data-port-sort]").forEach((button) => button.addEventListener("click", () => {
     if (currentPortSort.key === button.dataset.portSort) currentPortSort.direction *= -1;
     else currentPortSort = { key: button.dataset.portSort, direction: 1 };
@@ -221,9 +252,26 @@ if (typeof document !== "undefined") {
       document.getElementById("profile-button").setAttribute("aria-expanded", "false");
     }
   });
-  document.querySelectorAll(".nav-link").forEach((link) => link.addEventListener("click", () => {
-    document.querySelectorAll(".nav-link").forEach((item) => item.classList.toggle("active", item === link));
-  }));
+  const navLinks = [...document.querySelectorAll(".nav-link")];
+  const setActiveNavigation = (hash) => {
+    navLinks.forEach((link) => {
+      const active = link.getAttribute("href") === hash;
+      link.classList.toggle("active", active);
+      if (active) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+  };
+  navLinks.forEach((link) => link.addEventListener("click", () => setActiveNavigation(link.hash)));
+  window.addEventListener("hashchange", () => setActiveNavigation(window.location.hash || "#overview"));
+  if ("IntersectionObserver" in window) {
+    const sectionObserver = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveNavigation("#" + visible.target.id);
+    }, { rootMargin: "-18% 0px -68% 0px", threshold: [0, 0.15, 0.35, 0.6] });
+    document.querySelectorAll("main section[id]").forEach((section) => sectionObserver.observe(section));
+  }
+  setActiveNavigation(window.location.hash || "#overview");
   refreshDashboard();
   if (!DEMO_MODE) setInterval(refreshDashboard, REFRESH_INTERVAL);
 }
