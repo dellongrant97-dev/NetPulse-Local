@@ -57,6 +57,7 @@ The Python backend serves the same dashboard and read-only API endpoints as the 
 - Responsive sidebar, top bar, profile menu, and dark dashboard layout
 - Five-second refresh when connected to a local backend
 - Public demo mode with clearly identified sample data
+- Live per-interface upload/download rates, cumulative byte totals, and a rolling 60-second chart (local mode only)
 - Historical network analytics with one-minute local snapshots and a 30-day default retention period
 - Configurable history retention (7, 30, or 90 days) stored in browser IndexedDB
 - Host-level topology view with expandable interface details and related route gateways
@@ -86,6 +87,7 @@ The profile menu currently displays a guest session and a sign-in entry point, b
 - GET /api/interfaces — adapter status, assigned IP addresses, and VPN/tunnel classification
 - GET /api/ports — listening TCP sockets and bound UDP endpoints with process IDs when available
 - GET /api/routes — active routing table entries
+- GET /api/traffic — per-interface cumulative byte and packet counters; the browser calculates transfer rates from successive readings
 
 Only GET is supported for API endpoints. Unknown API paths return 404. The application is intended for local inspection; do not expose the backend to an untrusted network.
 
@@ -101,4 +103,4 @@ python -m pytest test/test_python_api.py test/test_python_inspector.py test/test
 
 ## Privacy and demo data
 
-The hosted demo contains only static, fictional sample data. The local application reads network information on the device where its backend is running. It does not upload that information to GitHub Pages.
+The hosted demo contains only static, fictional sample data. The local application reads network information on the device where its backend is running. Live traffic rates are calculated in the browser from local adapter byte counters polled once per second. Traffic counters and derived rates are not uploaded to GitHub Pages or a remote service.
