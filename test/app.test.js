@@ -25,13 +25,13 @@ test("API exposes read-only interfaces, ports, and routes", async () => {
     getRoutes: async () => [{ destination: "0.0.0.0/0" }]
   };
   await withServer(createApp(inspector), async (base) => {
-    const [interfaces, ports, routes] = await Promise.all(
+    const [interfaces, ports, routes, traffic] = await Promise.all(
       ["interfaces", "ports", "routes", "traffic"].map((name) => fetch(`${base}/api/${name}`))
     );
     assert.deepEqual(await interfaces.json(), [{ name: "Wi-Fi", status: "Up" }]);
     assert.deepEqual(await ports.json(), [{ protocol: "TCP", port: 3000, pid: 42 }]);
     assert.deepEqual(await routes.json(), [{ destination: "0.0.0.0/0" }]);
-    assert.deepEqual(await (await fetch(`${base}/api/traffic`)).json(), { supported: true, interfaces: [{ name: "Wi-Fi", bytesReceived: 1200, bytesSent: 450 }] });
+    assert.deepEqual(await traffic.json(), { supported: true, interfaces: [{ name: "Wi-Fi", bytesReceived: 1200, bytesSent: 450 }] });
     const unsupportedMethod = await fetch(`${base}/api/ports`, { method: "POST" });
     assert.equal(unsupportedMethod.status, 405);
     assert.equal(unsupportedMethod.headers.get("allow"), "GET");
