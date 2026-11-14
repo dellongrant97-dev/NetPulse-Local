@@ -69,6 +69,10 @@ def create_app(inspector=None):
     def get_interfaces():
         return read_network_data("get_interfaces")
 
+    @app.get("/api/traffic")
+    def get_traffic():
+        return read_network_data("get_traffic_counters")
+
     @app.get("/api/ports")
     def get_ports():
         return read_network_data("get_ports")
