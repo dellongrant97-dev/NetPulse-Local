@@ -5,6 +5,7 @@
   const HISTORY_LENGTH = 60;
   let started = false;
   let demoMode = false;
+  let pollInFlight = false;
   let previous = new Map();
   let latestRates = new Map();
   let selectedInterface = "";
@@ -212,7 +213,8 @@
   }
 
   async function poll() {
-    if (demoMode) return;
+    if (demoMode || pollInFlight) return;
+    pollInFlight = true;
     try {
       const payload = await fetchCounters();
       if (payload.supported === false) {
@@ -240,6 +242,8 @@
       setText("traffic-status", "API UNAVAILABLE");
       setText("traffic-error", (error && error.message) || "Unable to read local traffic counters.");
       byId("traffic-error").hidden = false;
+    } finally {
+      pollInFlight = false;
     }
   }
 
