@@ -95,7 +95,7 @@
           <div class="traffic-chart-wrap"><canvas id="traffic-chart" height="210" role="img" aria-label="Live download and upload speed chart"></canvas><div class="traffic-empty" id="traffic-empty">Waiting for two counter readings to calculate live speed.</div></div>
           <div class="traffic-chart-legend"><span><i class="traffic-download-key"></i> Download</span><span><i class="traffic-upload-key"></i> Upload</span><small>Rolling 60-second view · refreshed every second</small></div>
           <div class="traffic-table-wrap"><table><thead><tr><th>Interface</th><th>Status</th><th>Download</th><th>Upload</th><th>Received</th><th>Sent</th></tr></thead><tbody id="traffic-interfaces-body"><tr><td colspan="6" class="empty">Waiting for local traffic counters…</td></tr></tbody></table></div>
-          <p class="panel-footnote">Rates are calculated from Windows adapter byte counters. VPN and virtual adapters are shown separately; traffic on layered adapters can represent the same underlying packets.</p>
+          <p class="panel-footnote">Rates are calculated from local adapter byte counters. VPN and virtual adapters are shown separately; traffic on layered adapters can represent the same underlying packets.</p>
           <p class="traffic-error" id="traffic-error" role="status" hidden></p>
         </div>
         <div class="analytics-grid"><div><span>VPN / tunnel adapters</span><strong id="tunnel-count">—</strong></div><div><span>TCP endpoints</span><strong id="tcp-count">—</strong></div><div><span>UDP endpoints</span><strong id="udp-count">—</strong></div><div><span>Inactive interfaces</span><strong id="down-count">—</strong></div></div>
