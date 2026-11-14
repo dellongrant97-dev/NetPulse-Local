@@ -7,6 +7,9 @@ from netpulse.app import create_app
 @pytest.fixture
 def inspector():
     class FakeInspector:
+        def get_traffic_counters(self):
+            return {"supported": True, "interfaces": [{"name": "Wi-Fi", "bytesReceived": 1200, "bytesSent": 450}]}
+
         def get_interfaces(self):
             return [{"name": "Wi-Fi", "status": "Up"}]
 
@@ -25,6 +28,10 @@ def client(inspector):
 
 
 def test_api_exposes_read_only_interfaces_ports_and_routes(client):
+    assert client.get("/api/traffic").json() == {
+        "supported": True,
+        "interfaces": [{"name": "Wi-Fi", "bytesReceived": 1200, "bytesSent": 450}],
+    }
     assert client.get("/api/interfaces").json() == [
         {"name": "Wi-Fi", "status": "Up"}
     ]

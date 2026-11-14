@@ -218,6 +218,59 @@ async function getRoutes() {
   });
 }
 
+const WINDOWS_TRAFFIC_SCRIPT = [
+  "$ErrorActionPreference = 'Stop'",
+  "Get-NetAdapterStatistics | Select-Object Name, ReceivedBytes, SentBytes, ReceivedUnicastPackets, SentUnicastPackets, InboundErrors, OutboundErrors | ConvertTo-Json -Compress"
+].join("; ");
+
+async function getTrafficCounters() {
+  if (process.platform === "win32") {
+    const executable = path.join(
+      process.env.SystemRoot || "C:\\Windows",
+      "System32",
+      "WindowsPowerShell",
+      "v1.0",
+      "powershell.exe"
+    );
+    const output = await run(executable, [
+      "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", WINDOWS_TRAFFIC_SCRIPT
+    ]);
+    const adapters = parseJsonArray(JSON.parse(output.trim() || "[]"));
+    return {
+      supported: true,
+      sampledAt: Date.now(),
+      interfaces: adapters.map((item) => ({
+        name: String(item.Name || "Unknown"),
+        bytesReceived: Number(item.ReceivedBytes) || 0,
+        bytesSent: Number(item.SentBytes) || 0,
+        packetsReceived: Number(item.ReceivedUnicastPackets) || 0,
+        packetsSent: Number(item.SentUnicastPackets) || 0,
+        errorsIn: Number(item.InboundErrors) || 0,
+        errorsOut: Number(item.OutboundErrors) || 0
+      }))
+    };
+  }
+
+  if (process.platform === "linux") {
+    const names = await fs.readdir("/sys/class/net");
+    const interfaces = await Promise.all(names.map(async (name) => {
+      const base = path.join("/sys/class/net", name, "statistics");
+      const readCounter = async (counter) =>
+        Number((await fs.readFile(path.join(base, counter), "utf8")).trim()) || 0;
+      const [bytesReceived, bytesSent, packetsReceived, packetsSent, errorsIn, errorsOut] =
+        await Promise.all([
+          readCounter("rx_bytes"), readCounter("tx_bytes"),
+          readCounter("rx_packets"), readCounter("tx_packets"),
+          readCounter("rx_errors"), readCounter("tx_errors")
+        ]);
+      return { name, bytesReceived, bytesSent, packetsReceived, packetsSent, errorsIn, errorsOut };
+    }));
+    return { supported: true, sampledAt: Date.now(), interfaces };
+  }
+
+  return { supported: false, sampledAt: Date.now(), interfaces: [] };
+}
+
 async function getPorts() {
   if (process.platform === "win32") return parseJsonArray((await getWindowsSnapshot()).ports);
   return process.platform === "linux" ? getLinuxPorts() : getMacPorts();
@@ -227,6 +280,7 @@ module.exports = {
   getInterfaces,
   getPorts,
   getRoutes,
+  getTrafficCounters,
   isTunnel,
   parseLinuxIpv6Routes,
   parseLinuxRoutes,

@@ -10,7 +10,8 @@ function createApp(inspector = systemInspector) {
   for (const [route, method] of [
     ["/api/interfaces", "getInterfaces"],
     ["/api/ports", "getPorts"],
-    ["/api/routes", "getRoutes"]
+    ["/api/routes", "getRoutes"],
+    ["/api/traffic", "getTrafficCounters"]
   ]) {
     app.get(route, async (request, response, next) => {
       try {

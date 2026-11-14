@@ -6,6 +6,7 @@ import re
 import socket
 import struct
 import subprocess
+import time
 
 import psutil
 
@@ -120,6 +121,32 @@ class SystemInspector:
             )
 
         return sorted(interfaces, key=lambda item: item["name"].lower())
+
+    def get_traffic_counters(self):
+        counters = psutil.net_io_counters(pernic=True) or {}
+        stats = psutil.net_if_stats()
+        interfaces = []
+
+        for name, counter in sorted(counters.items(), key=lambda item: item[0].lower()):
+            interface_stats = stats.get(name)
+            interfaces.append(
+                {
+                    "name": name,
+                    "status": "Up" if interface_stats and interface_stats.isup else "Down",
+                    "bytesReceived": int(counter.bytes_recv),
+                    "bytesSent": int(counter.bytes_sent),
+                    "packetsReceived": int(counter.packets_recv),
+                    "packetsSent": int(counter.packets_sent),
+                    "errorsIn": int(counter.errin),
+                    "errorsOut": int(counter.errout),
+                }
+            )
+
+        return {
+            "supported": True,
+            "sampledAt": int(time.time() * 1000),
+            "interfaces": interfaces,
+        }
 
     def get_ports(self):
         try:
