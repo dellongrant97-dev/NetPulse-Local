@@ -348,6 +348,7 @@ if (typeof document !== "undefined") {
   }
   setActiveNavigation(window.location.hash || "#overview");
   refreshDashboard();
+  if (window.NetPulseTraffic) window.NetPulseTraffic.start({ demoMode: DEMO_MODE });
   if (!DEMO_MODE) {
     setInterval(refreshDashboard, REFRESH_INTERVAL);
     document.addEventListener("visibilitychange", () => {
