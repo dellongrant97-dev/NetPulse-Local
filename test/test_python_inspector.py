@@ -99,3 +99,33 @@ def test_ports_return_empty_list_when_access_is_denied(monkeypatch):
     monkeypatch.setattr(psutil, "net_connections", denied)
 
     assert SystemInspector().get_ports() == []
+
+
+def test_traffic_counters_return_per_interface_byte_totals(monkeypatch):
+    Counter = namedtuple(
+        "Counter",
+        "bytes_sent bytes_recv packets_sent packets_recv errin errout dropin dropout",
+    )
+    Stats = namedtuple("Stats", "isup")
+    monkeypatch.setattr(
+        psutil,
+        "net_io_counters",
+        lambda pernic: {
+            "Wi-Fi": Counter(500, 1200, 5, 12, 0, 0, 0, 0),
+        },
+    )
+    monkeypatch.setattr(psutil, "net_if_stats", lambda: {"Wi-Fi": Stats(True)})
+
+    result = SystemInspector().get_traffic_counters()
+
+    assert result["supported"] is True
+    assert result["interfaces"] == [{
+        "name": "Wi-Fi",
+        "status": "Up",
+        "bytesReceived": 1200,
+        "bytesSent": 500,
+        "packetsReceived": 12,
+        "packetsSent": 5,
+        "errorsIn": 0,
+        "errorsOut": 0,
+    }]
