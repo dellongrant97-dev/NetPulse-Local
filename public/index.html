@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="history.js" defer></script>
   <script src="intelligence.js" defer></script>
+  <script src="traffic.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -80,6 +81,23 @@
 
       <section class="panel" id="analytics">
         <div class="panel-heading"><div class="section-title"><span class="section-kicker">03 / HISTORICAL INTELLIGENCE</span><h2>Historical network analytics</h2><p>Measured network snapshots retained locally on this device</p></div><span class="panel-tag"><span class="tiny-dot"></span><span id="history-status">COLLECTING HISTORY</span></span></div>
+        <div class="traffic-monitor">
+          <div class="traffic-toolbar">
+            <div><span class="traffic-label">LIVE INTERFACE</span><label for="traffic-interface">Monitor adapter</label><select id="traffic-interface"><option value="">Waiting for adapters…</option></select></div>
+            <span class="traffic-status" id="traffic-status">CONNECTING TO LOCAL COUNTERS</span>
+          </div>
+          <div class="traffic-metrics">
+            <article><span>DOWNLOAD</span><strong id="traffic-download">—</strong><small id="traffic-download-unit">Waiting for first reading</small></article>
+            <article><span>UPLOAD</span><strong id="traffic-upload">—</strong><small id="traffic-upload-unit">Waiting for first reading</small></article>
+            <article><span>TOTAL RECEIVED</span><strong id="traffic-received">—</strong><small>Selected adapter · cumulative</small></article>
+            <article><span>TOTAL SENT</span><strong id="traffic-sent">—</strong><small>Selected adapter · cumulative</small></article>
+          </div>
+          <div class="traffic-chart-wrap"><canvas id="traffic-chart" height="210" role="img" aria-label="Live download and upload speed chart"></canvas><div class="traffic-empty" id="traffic-empty">Waiting for two counter readings to calculate live speed.</div></div>
+          <div class="traffic-chart-legend"><span><i class="traffic-download-key"></i> Download</span><span><i class="traffic-upload-key"></i> Upload</span><small>Rolling 60-second view · refreshed every second</small></div>
+          <div class="traffic-table-wrap"><table><thead><tr><th>Interface</th><th>Status</th><th>Download</th><th>Upload</th><th>Received</th><th>Sent</th></tr></thead><tbody id="traffic-interfaces-body"><tr><td colspan="6" class="empty">Waiting for local traffic counters…</td></tr></tbody></table></div>
+          <p class="panel-footnote">Rates are calculated from Windows adapter byte counters. VPN and virtual adapters are shown separately; traffic on layered adapters can represent the same underlying packets.</p>
+          <p class="traffic-error" id="traffic-error" role="status" hidden></p>
+        </div>
         <div class="analytics-grid"><div><span>VPN / tunnel adapters</span><strong id="tunnel-count">—</strong></div><div><span>TCP endpoints</span><strong id="tcp-count">—</strong></div><div><span>UDP endpoints</span><strong id="udp-count">—</strong></div><div><span>Inactive interfaces</span><strong id="down-count">—</strong></div></div>
         <div class="history-toolbar"><div class="history-period"><label for="history-range">TREND WINDOW</label><select id="history-range"><option value="24">Last 24 hours</option><option value="168" selected>Last 7 days</option><option value="720">Last 30 days</option></select></div><span class="history-meta" id="history-meta">Waiting for the first local snapshot</span></div>
         <div class="history-chart-wrap"><canvas id="history-chart" height="220" role="img" aria-label="Historical network activity chart"></canvas><div class="history-empty" id="history-empty">Historical trends will appear after NetPulse collects its first local snapshot.</div></div>
