@@ -6,6 +6,7 @@ import re
 import socket
 import struct
 import subprocess
+import time
 
 import psutil
 
@@ -143,7 +144,7 @@ class SystemInspector:
 
         return {
             "supported": True,
-            "sampledAt": int(__import__("time").time() * 1000),
+            "sampledAt": int(time.time() * 1000),
             "interfaces": interfaces,
         }
 
