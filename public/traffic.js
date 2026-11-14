@@ -224,16 +224,17 @@
       const interfaces = payload.interfaces;
       updateInterfaceSelector(interfaces);
       const timestamp = Number(payload.sampledAt) || Date.now();
+      const hadPreviousReading = previous.size > 0;
       const rates = calculateRates(interfaces, timestamp);
       const selected = rates.get(selectedInterface);
       if (selected) {
-        samples.push({ download: selected.download * 8, upload: selected.upload * 8 });
+        samples.push({ download: selected.download, upload: selected.upload });
         samples = samples.slice(-HISTORY_LENGTH);
       }
       renderTable(interfaces, rates);
       renderSelected();
       drawChart();
-      setText("traffic-status", previous.size ? "LIVE · 1 SECOND" : "SAMPLING");
+      setText("traffic-status", hadPreviousReading ? "LIVE · 1 SECOND" : "SAMPLING");
       byId("traffic-error").hidden = true;
     } catch (error) {
       setText("traffic-status", "API UNAVAILABLE");
